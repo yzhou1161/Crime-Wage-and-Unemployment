@@ -6,8 +6,7 @@ c <- read.csv("CrimeStatebyState.csv")
 u <- read.csv("unemploymentbystate.csv")
 #clean up the data
 names(u) <- gsub("X","",names(u))
-tu <- t(u)
-tu <- as.data.frame(tu)
+tu <- as.data.frame(t(u))
 tu[52:54] <- list(NULL)
 colnames(tu) <- as.character(unlist(tu[1,]))
 tu <- tu[-1,]
@@ -94,3 +93,114 @@ p3 + geom_point(size=3) + labs(x="Average annual pay",
 
 p <- ggplot(d, aes(x=Unemployment.Rate, y=reorder(State,Unemployment.Rate), color=Violent.Crime.rate))
 p + geom_point(size=3)
+            
+
+stat <- as.character(state.region)
+names(stat) <- as.character(state.name)
+stat[c("Illinois","Michigan","Indiana","Ohio","Wisconsin",
+       "Iowa","Kansas","Minnesota","Missouri","Nebraska",
+       "North Dakota","South Dakota")] <- "Midwest"
+d$region <- stat[as.character(d$State)]
+
+
+p <- ggplot(d[d$Year == 2011,],
+            aes(x=Unemployment.Rate, y=Violent.Crime.rate))
+p + geom_point() + geom_smooth(method = "loess")
+
+
+
+
+subd <- d[d$annual_avg_wkly_wage != 0,]
+
+p2 <- ggplot(d,
+             aes(x=Unemployment.Rate, y=Murder.and.nonnegligent.manslaughter.rate))
+p2 + geom_point() + geom_smooth(method = "loess")
+
+
+p4 <- ggplot(subd,
+             aes(x=avg_annual_pay, y=Murder.and.nonnegligent.manslaughter.rate))
+p4 + geom_point() + geom_smooth(method = "loess")
+
+
+p3 <- ggplot(subd,
+             aes(x=avg_annual_pay, y=Murder.and.nonnegligent.manslaughter.rate))
+p3 + geom_point(aes(color = region)) + geom_smooth(method = "loess")
+
+
+
+
+
+require(png)
+region_list <- unique(d.long$region)
+
+# create for loop to produce ggplot2 graphs 
+for (i in seq_along(region_list)) { 
+  # create plot for each county in df 
+  png(paste0(region_list[i],".png"))
+  ggplot(subset(d.long, d.long$region==region_list[i]),
+                 aes(Year, value, group = crime, color = crime)) + 
+    
+    geom_line(size=1) +
+    
+    scale_y_continuous("Crime rate") +
+    scale_x_continuous("Year") +
+    
+    ggtitle(paste(region_list[i], " Crime Trend",
+                  sep=''))
+  dev.off()
+  #rasterGrob(readPNG(region_list[i],".png", native = FALSE),
+             #interpolate = FALSE)
+  
+}
+
+pdf("teh.pdf")
+do.call(grid.arrange, c(thePlots, ncol = 3))
+dev.off()
+
+
+
+
+
+
+
+
+
+drop <- c("Population","avg_annual_pay","Unemployment.Rate","annual_avg_wkly_wage","State")
+d2 <- d[,!names(d)%in%drop]
+
+# melt data to long format 
+d.long <- melt(d2, id.vars=c("region", "Year"), variable.name = "crime")
+
+
+results <- "/Users/Mago/Desktop/R/CU"  
+
+
+
+
+
+
+region_list <- unique(d.long$region)
+  
+  # create for loop to produce ggplot2 graphs 
+  for (i in seq_along(region_list)) { 
+    # create plot for each county in df 
+    plot <- ggplot(subset(d.long, d.long$region==region_list[i]),
+             aes(Year, value, group = crime, color = crime)) + 
+      
+      geom_line(size=1) +
+      
+  
+      scale_y_continuous("Crime rate") +
+      scale_x_continuous("Year") +
+      
+      ggtitle(paste(region_list[i], " Crime Trend",
+                    sep=''))
+    
+  }
+  
+pdf("plots.pdf",onefile = T)
+for (i in seq(length(region_list))) {
+  do.call("grid.arrange", region_list[i])  
+}
+dev.off()
+  
